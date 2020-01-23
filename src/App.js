@@ -1,21 +1,19 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import Box from '@material-ui/core/Box';
 
-class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <div className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h2>Welcome to React</h2>
-        </div>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
-      </div>
-    );
-  }
-}
+const useStyles = makeStyles(theme => ({
+	root: { backgroundColor: '#787878', height: '100%' },
+	mainText: { color: '#ffffff' }
+}));
+
+const App = () => {
+	const classes = useStyles();
+	return (
+		<Box height="100%" className={classes.root}>
+			<p className={classes.mainText}>tekstiä</p>
+		</Box>
+	);
+};
 
 export default App;
