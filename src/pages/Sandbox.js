@@ -4,13 +4,8 @@ import { Line } from 'react-chartjs-2';
 import creatureData from '../data/creaturedata_grouped.json'
 import { Grid } from '@material-ui/core';
 import _ from 'lodash'
-import Switch from '@material-ui/core/Switch';
-import InputLabel from '@material-ui/core/InputLabel';
-import MenuItem from '@material-ui/core/MenuItem';
-import FormHelperText from '@material-ui/core/FormHelperText';
-import FormControl from '@material-ui/core/FormControl';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Select from '@material-ui/core/Select';
+import Slider from '@material-ui/core/Slider';
+import Typography from '@material-ui/core/Typography';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormGroup from '@material-ui/core/FormGroup';
 
@@ -93,40 +88,22 @@ const useStyles = makeStyles(theme => ({
   
   const ComapreTowns = () => {
       const classes = useStyles();
-      const [currentStat, setCurrentStat] = React.useState("HP")
-      const [tickMax, setTickMax] = React.useState(300)
-      const [combineCharts, setCombineCharts] = React.useState(false)
-      const [normalizeWithGold, setNormalizeWithGold] = React.useState(false)
-      const [showTier, setShowTier] = React.useState(new Array(14).fill(true))
-
-      const getTownData = townName => {
-          console.log(creatureData[townName].filter((n, i) => showTier[i]).map(c => normalizeWithGold ? c[currentStat] / c.Cost : c[currentStat]))
-          return {
-                labels: creatureData[townName].filter((n, i) => showTier[i]).map(c => c.Name),
-                datasets: [
-                    {
-                        ...defaultLineOptions,
-                        borderColor: townColors[townName],
-                        pointHoverBackgroundColor: townColors[townName],
-                        pointHoverBorderColor: townColors[townName],
-                        label: townName,
-                        fill: false,
-                        data: creatureData[townName].filter((n, i) => showTier[i]).map(c => normalizeWithGold ? c[currentStat] / c.Cost : c[currentStat])
-                    }
-                ]
-            }
-        
-    }
+      const [attMultiplier, setAttMultiplier] = React.useState(1)
+      const [defMultiplier, setDefMultiplier] = React.useState(1)
+      const [hpMultiplier, setHpMultiplier] = React.useState(1)
+      const [dmgMultiplier, setDmgMultiplier] = React.useState(1)
+      const [speedMultiplier, setSpeedMultiplier] = React.useState(1)
+      const [offset, setOffset] = React.useState(0)
 
     const calcAIValue = creature => {
         const {Att, Def, HP, Spd} = creature
         const DMin = creature["D-"]
         const DMax = creature["D+"] 
-        console.log(DMin, DMax, (DMin + DMax) / 2.0)
-        return (Att + Def + HP + Math.ceil((DMin + DMax) / 2.0)) * Spd
+        console.log(attMultiplier, defMultiplier, hpMultiplier, dmgMultiplier, speedMultiplier)
+        return attMultiplier * Att + defMultiplier * Def + hpMultiplier * HP + dmgMultiplier * Math.floor((DMin + DMax) / 2.0) + (Spd-3) * speedMultiplier + offset
     }
 
-    const getAllTownsData = () => {
+    const getLines = () => {
         return {
             labels:_.range(0,126),
             datasets:[
@@ -137,7 +114,7 @@ const useStyles = makeStyles(theme => ({
                     pointHoverBorderColor: cyan[500],
                     label: "My AI Value",
                     fill: false,
-                    data: _.flatten(_.values(creatureData)).filter(c => c.Special === "").map(c => calcAIValue(c))
+                    data: _.flatten(_.values(creatureData)).map(c => calcAIValue(c))
                 },
                 {
                     ...defaultLineOptions,
@@ -146,7 +123,7 @@ const useStyles = makeStyles(theme => ({
                     pointHoverBorderColor: red[500],
                     label: "Real AI Value",
                     fill: false,
-                    data: _.flatten(_.values(creatureData)).filter(c => c.Special === "").map(c => c.Val)
+                    data: _.flatten(_.values(creatureData)).map(c => c.Val)
                 }
             ]
             
@@ -155,9 +132,6 @@ const useStyles = makeStyles(theme => ({
 
     const getOptions = townName => {
         return {
-            legend: {
-                display: combineCharts,
-            },
             scales: {
                 xAxes: [
                     {
@@ -175,83 +149,36 @@ const useStyles = makeStyles(theme => ({
                         },
                         ticks: {
                             suggestedMin: 0,
-                            suggestedMax: combineCharts ? null: tickMax
+                            suggestedMax: null
                         }
                       }
                 ]
             },
             title: {
-                display: !combineCharts,
+                display: "AI Value",
                 text: townName 
             }
         }
     }
 
-    const formRow = rowIndex => {
+    const getSlider = (name, func, step = 1, min = 0, max = 50,) => {
         return (
-          <React.Fragment>
-            <Grid item xs={4}>
-                {<Line options={getOptions(towns[rowIndex * 3])} data={getTownData(towns[rowIndex * 3])}/>}
-            </Grid>
-            <Grid item xs={4}>
-                {<Line options={getOptions(towns[rowIndex * 3+1])} data={getTownData(towns[rowIndex * 3 + 1])}/>}
-            </Grid>
-            <Grid item xs={4}>
-                {<Line options={getOptions(towns[rowIndex * 3+2])} data={getTownData(towns[rowIndex * 3 + 2])}/>}
-            </Grid>
-          </React.Fragment>
-        );
-      }
+            <div>
 
-    const getAllCharts = () => {
-        return _.range(3).map(i =>
-            <Grid container item xs={12} spacing={3} key={i}>
-                {formRow(i)}
-            </Grid>
+                <Typography id="discrete-slider" gutterBottom color="primary">
+                    {name}
+                </Typography>
+                <Slider
+                    defaultValue={1}
+                    aria-labelledby="discrete-slider"
+                    valueLabelDisplay="auto"
+                    step={step}
+                    min={min}
+                    max={max}
+                    onChange={(event, value) => func(value)}
+                />
+            </div>
         )
-        
-    }
-
-    const handleChangeTierVisibility = i => {
-        const tmp = [...showTier]
-        tmp[i] = !tmp[i]
-        const maxTickCreature = _.maxBy(_.flatten(_.values(_.mapValues(creatureData,townData => townData.filter((n, i) => tmp[i])))), c => normalizeWithGold ? c[currentStat]/c.Cost : c[currentStat])
-        setShowTier(tmp)
-        console.log(normalizeWithGold ? maxTickCreature[currentStat] / maxTickCreature.Cost : maxTickCreature[currentStat])
-        setTickMax(normalizeWithGold ? maxTickCreature[currentStat] / maxTickCreature.Cost : maxTickCreature[currentStat] )
-    }
-
-    const getTierCheckboxes = ( ) => {
-        return _.range(7).map( i =>
-            <Grid container key={i}>
-                <Grid item xs={6}>
-                    <FormControlLabel
-                        control={<CustomCheckbox color="primary" checked={showTier[i*2]} onChange={() => handleChangeTierVisibility(i*2)} value={(i+1).toString()} />}
-                        label={i+1}
-                        classes={{label: classes.text}}
-
-                        />
-                </Grid>
-                <Grid item xs={6}>
-                    <FormControlLabel
-                        control={<CustomCheckbox  color="primary" checked={showTier[i*2+1]} onChange={() => handleChangeTierVisibility(i*2+1)} value={(i+1).toString().concat("+")} />}
-                        label={(i+1).toString().concat("+")}
-                        classes={{label: classes.text}}
-
-                    />
-                </Grid>
-            </Grid>
-                        
-
-        )
-    }
-
-
-    const handleStatChange = event => {
-        
-        setCurrentStat(event.target.value)
-        const maxTickCreature = _.maxBy(_.flatten(_.values(_.mapValues(creatureData,townData => townData.filter((n, i) => showTier[i])))), c => normalizeWithGold ? c[event.target.value]/c.Cost : c[event.target.value])
-        setTickMax(normalizeWithGold ? maxTickCreature[event.target.value] / maxTickCreature.Cost : maxTickCreature[event.target.value] )
     }
 
     return (
@@ -259,75 +186,19 @@ const useStyles = makeStyles(theme => ({
             <Grid container>
                 <Grid item  xs={1}>
                     <div className={classes.controlPanel}>
+                        {getSlider("Attack multiplier", setAttMultiplier)}
+                        {getSlider("Defence multiplier", setDefMultiplier)}
+                        {getSlider("HP multiplier", setHpMultiplier)}
+                        {getSlider("Damage multiplier", setDmgMultiplier)}
+                        {getSlider("Speed multiplier", setSpeedMultiplier)}
+                        {getSlider("Offset", setOffset, 1, -200, 200)}
 
-                        <FormControl className={classes.formControl} color="primary" style={{color: "#fff"}}>
-                            <Select
-                                labelId="currentStatLabel"
-                                id="currentStat"
-                                value={currentStat}
-                                onChange={handleStatChange}
-                                style={{color: "#fff"}}
-                                className={classes.select}
-                                inputProps={{
-                                    classes: {
-                                        icon: classes.icon,
-                                    },
-                                }}
-                            >
-                                <MenuItem value={"Att"}>Attack</MenuItem>
-                                <MenuItem value={"Def"}>Defence</MenuItem>
-                                <MenuItem value={"D-"}>Min Damage</MenuItem>
-                                <MenuItem value={"D+"}>Max Damage</MenuItem>
-                                <MenuItem value={"HP"}>HP</MenuItem>
-                                <MenuItem value={"Spd"}>Speed</MenuItem>
-                                <MenuItem value={"Grw"}>Growth</MenuItem>
-                                <MenuItem value={"Cost"}>Cost</MenuItem>
-                                <MenuItem value={"Val"}>AI Value</MenuItem>
 
-                            </Select>
-                        </FormControl>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    color="primary"
-                                    checked={combineCharts}
-                                    onChange={event => setCombineCharts(event.target.checked) }
-                                    classes={{
-                                        track: classes.switchToggle
-                                    }}
-                                />
-                            }
-                            classes={{label: classes.text}}
-                            label="Combine"
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    color="primary"
-                                    checked={normalizeWithGold}
-                                    onChange={event => {
-                                        const maxTickCreature = _.maxBy(_.flatten(_.values(_.mapValues(creatureData,townData => townData.filter((n, i) => showTier[i])))), c => event.target.checked ? c[currentStat]/c.Cost : c[currentStat])
-                                        setTickMax(event.target.checked ? maxTickCreature[currentStat] / maxTickCreature.Cost : maxTickCreature[currentStat] )
-                                        
-                                        setNormalizeWithGold(event.target.checked)}
-                                    }
-                                    classes={{
-                                        track: classes.switchToggle
-                                    }}
-                                />
-                            }
-                            classes={{label: classes.text}}
-                            label="Per 1 gold"
-                        />
-                        <FormGroup>
-                            {getTierCheckboxes()}
-                        
-                        </FormGroup>
                     </div>
                 </Grid>
                 <Grid item xs={10}>
                 <Grid container spacing={1}>
-                    <Line options={getOptions("")} data={getAllTownsData()}/> 
+                    <Line options={getOptions("")} data={getLines()}/> 
                     
                 </Grid> 
             </Grid>

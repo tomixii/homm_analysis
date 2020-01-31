@@ -4,7 +4,9 @@ import BottomStepper from './components/BottomStepper'
 import GeneralInfo from './pages/GeneralInfo'
 import CompareTowns from './pages/CompareTowns'
 import CompareCreatures from './pages/CompareCreatures'
+import ExtraData from './pages/ExtraData'
 import Sandbox from './pages/Sandbox'
+
 
 
 import cyan from '@material-ui/core/colors/cyan';
@@ -56,6 +58,8 @@ const App = () => {
         return <CompareTowns/>;
       case 2:
         return <CompareCreatures/>;
+      case 3:
+        return <ExtraData/>
       default:
         return <Sandbox/>;
     }
