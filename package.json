@@ -10,7 +10,7 @@
     "react": "^16.12.0",
     "react-chartjs-2": "^2.8.0",
     "react-dom": "^16.12.0",
-    "react-scripts": "0.9.5"
+    "react-scripts": "5.0.1"
   },
   "devDependencies": {
     "mime": ">=1.4.1",
